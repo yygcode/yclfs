@@ -1,0 +1,19 @@
+#!/bin/sh -e
+
+echo > /sys/kernel/uevent_helper
+
+UDEV_ROOT=/dev
+udevd --daemon --resolve-names=never
+
+udevadm trigger --action=add
+udevadm settle || true
+
+if [ -d /sys/bus/scsi ]; then
+	modprobe -q scsi_wait_scan && modprobe -r scsi_wait_scan || true
+	udevadm settle || true
+fi
+
+if [ "$rootdelay" ]; then
+	echo "rootdelay=$rootdelay"
+	sleep $rootdelay
+fi
