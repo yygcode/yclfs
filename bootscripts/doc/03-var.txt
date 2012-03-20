@@ -1,0 +1,26 @@
+# * -- variable data files -- *
+
+* purpose
+	/var contains variable data files. This include spool directories
+	and files, administrative and logging data, and transient and
+	temporary files.
+
+	Some portions of /var are not shareable between adifferent systems.
+	For instance, /var/log, /var/lock and /var/run. Other portions may
+	be shared, notably /var/mail, /var/cache/man, /var/cache/fonts, and
+	/var/spool/news.
+
+	/var is specified here in order to make it possible to mount /usr
+	read-only.
+
+* requirement
+	Directory	Description
+	cache		Application cache data
+	lib		Variable state information
+	local		Variable dat for /usr/local
+	lock		Lock files
+	log		Log files and directories
+	opt		Variable for /opt
+	run		Data relevant to running process
+	spool		Application spool data
+	tmp		Temporary files preserved between system reboots.

@@ -1,0 +1,6 @@
+#!/bin/sh
+#
+# rcS
+#
+
+exec /etc/init.d/rc S

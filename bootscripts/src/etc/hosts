@@ -1,0 +1,57 @@
+# * -- /etc/hosts - The static table lookup for hostnames -- *
+
+127.0.0.1	localhost loopback localhost.localdomain
+
+# ipv6
+::1		ip6-localhost ip6-loopback
+fe00::0		ip6-localnet
+ff00::0		ip6-mcastprefix
+ff02::1		ip6-allnodes
+ff02::2		ip6-allrouters
+ff02::3		ip6−allhosts
+
+# evade great wall firewall
+## google service
+203.208.46.146	www.google.com
+203.208.46.146	g
+203.208.46.146	chrome.google.com
+203.208.46.146	clients0.google.com
+203.208.46.146	clients1.google.com
+203.208.46.146	clients2.google.com
+203.208.46.146	clients3.google.com
+203.208.46.146	clients4.google.com
+203.208.46.146	www.googleusercontent.com
+203.208.46.146	lh0.googleusercontent.com
+203.208.46.146	lh1.googleusercontent.com
+203.208.46.146	lh2.googleusercontent.com
+203.208.46.146	lh3.googleusercontent.com
+203.208.46.146	lh4.googleusercontent.com
+203.208.46.146	lh5.googleusercontent.com
+203.208.46.146	lh6.googleusercontent.com
+203.208.46.146	clients1.googleusercontent.com
+203.208.46.146	clients2.googleusercontent.com
+## google web caches
+203.208.46.146	webcache.googleusercontent.com
+## google ssl
+203.208.46.146	encrypted.google.com
+203.208.46.146	encrypted.google.com.hk
+## google docs
+203.208.46.146	docs.google.com
+203.208.46.146	docs0.google.com
+203.208.46.146	docs1.google.com
+203.208.46.146	docs2.google.com
+203.208.46.146	docs3.google.com
+203.208.46.146	spreadsheets.google.com
+203.208.46.146	spreadsheets0.google.com
+203.208.46.146	spreadsheets1.google.com
+203.208.46.146	spreadsheets2.google.com
+203.208.46.146	spreadsheets3.google.com
+## google gmail and chat
+203.208.46.146	mail.google.com
+203.208.46.146	chatenabled.mail.google.com
+## google preview
+203.208.46.146	www.googlepreview.com
+## google translates
+203.208.46.146	translate.google.com
+203.208.46.146	translate.googleapis.com
+

@@ -1,0 +1,46 @@
+#! /bin/sh
+#
+# rc - starts/stops services on runlevel changes.
+#
+
+# Init sets following envs:
+#	PATH		/bin:/usr/bin:/sbin:/usr/sbin
+#	INIT_VERSION	Useful to determine if a script runs directly from init
+#	RUNLEVEL	The current system runlevel
+#	PREVLEVEL	The previous runlevel (useful after a runlevel switch)
+#	CONSOLE		The system console. Inherited from the kernel.
+
+self=$0
+
+umask 022
+
+on_exit()
+{
+	echo "error: '$self' exited outside the expected code flow"
+}
+trap on_exit EXIT
+
+# ignore ctrl-c, etc.
+trap ':' INT QUIT TSTP
+
+stty onlcr 0>&1
+
+runlevel=$RUNLEVEL
+[ -z "$1" ] || runlevel=$1
+if [ -z "$runlevel" ]; then
+	echo "Usage: $self <runlevel>" >&2
+	exit 1
+fi
+prevlevel=$PREVLEVEL
+[ -z "$prevlevel" ] && prevlevel=N
+
+export runlevel prevlevel
+
+if [ -f /etc/default/rcS ]; then
+	. /etc/default/rcS
+fi
+
+if [ -f /lib/services/init-functions ]; then
+	. /lib/
+else
+fi

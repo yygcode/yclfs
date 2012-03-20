@@ -1,0 +1,5 @@
+# * -- /etc/hosts.allow: list of hosts that are allowed to access the
+#      system.  -- *
+#
+# Example:	ALL: LOCAL @some_netgroup
+#		ALL: .foobar.edu EXCEPT terminalserver.foobar.edu

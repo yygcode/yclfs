@@ -1,0 +1,42 @@
+# * -- inittab: sysv-compatible init process configuration
+#
+# Help: man 5 inittab; man 8 init
+#
+
+# the default runlevel
+id:2:initdefault
+
+# system initialization (runlevels field is ignored)
+si::sysinit:/etc/init.d/rcS
+
+# single-user mode
+su:S:wait:/sbin/sulogin
+
+l0:0:wait:/etc/init.d/rc 0
+l1:1:wait:/etc/init.d/rc 1
+l2:2:wait:/etc/init.d/rc 2
+l3:3:wait:/etc/init.d/rc 3
+l4:4:wait:/etc/init.d/rc 4
+l5:5:wait:/etc/init.d/rc 5
+l6:6:wait:/etc/init.d/rc 6
+
+# ctrl+alt+del
+ca:12345:ctrlaltdel:/sbin/shutdown -t1 -a -r now
+
+# fallthrough in case of emergency
+z6:6:respawn:/sbin/sulogin
+
+# power fails
+pf::powerwait:/etc/init.d/powerfail start
+pn::powerfailnow:/etc/init.d/powerfail now
+po::powerokwait:/etc/init.d/powerfail stop
+
+# login invocations
+# the "$ID" field must the same as the last
+# character of the device (after tty)
+1:2345:respawn:/sbin/getty 38400 tty1
+2:23:respawn:/sbin/getty 38400 tty2
+3:23:respawn:/sbin/getty 38400 tty3
+4:23:respawn:/sbin/getty 38400 tty4
+5:23:respawn:/sbin/getty 38400 tty5
+6:23:respawn:/sbin/getty 38400 tty6

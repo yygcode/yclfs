@@ -8,13 +8,10 @@ echo "Loading, please wait ..."
 [ -d /proc ] || mkdir /proc
 [ -d /tmp ]  || mkdir /tmp
 mkdir -p /var/lock
-mount -t sysfs -o nodev,noexec,nosuid none /sys
-mount -t proc  -o nodev,noexec,nosuid none /proc
+mount -t sysfs -o nodev,noexec,nosuid sysfs /sys
+mount -t proc -o nodev,noexec,nosuid proc /proc
 
-if [ -e /etc/udev/udev.conf ]; then
-	. /etc/udev/udev.conf
-fi
-
+[ -f /etc/udev/udev.conf ] && . /etc/udev/udev.conf
 if ! mount -t devtmpfs -o mode=0755 none /dev; then
 	echo "W: devtmpfs not available, falling back to tmpfs for /dev"
 	mount -t tmpfs -o size=10M,mode=0755 udev /dev
@@ -25,10 +22,15 @@ fi
 mkdir -p /dev/pts
 mount -t devpts -o noexec,nosuid,gid=5,mode=0620 none /dev/pts || true
 
-export boot=local
+. /conf/initrd.conf
+for conf in /conf/conf.d/*; do
+	[ -f "$conf" ] && . "$conf"
+done
+
+export boot=$BOOT
 export break=
-export debug=
-export init=/sbin/init
+export debug=$DEBUG
+export init=$INIT
 export panic=
 export quiet=
 export readonly=
@@ -37,13 +39,6 @@ export rootdelay=
 export rootflags=
 export rootfstype=
 export rootmnt=/root
-
-# bring in config
-. /conf/initramfs.conf
-for conf in /conf/conf.d/*
-do
-	[ -f "$conf" ] && . "$conf"
-done
 
 # helper routines
 . /scripts/functions
