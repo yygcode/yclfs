@@ -1,0 +1,164 @@
+# * -- shell-scripts-routines -- *
+
+_log_msg()
+{
+	[ "$quiet" = "y" ] && return
+	printf "$@"
+}
+
+
+_debug_msg()
+{
+	[ "$debug" != "y" ] && return
+	_log_msg "$@"
+}
+
+log_call_msg()
+{
+	_log_msg "Calling: $@\n"
+}
+
+log_success_msg()
+{
+	_log_msg "Success: $@\n"
+}
+
+log_failure_msg()
+{
+	_log_msg "Failure: $@\n"
+}
+
+log_warning_msg()
+{
+	_log_msg "Warning: $@\n"
+}
+
+log_begin_msg()
+{
+	_log_msg "Begin: $@ ... "
+}
+
+log_end_msg()
+{
+	_log_msg "done.\n"
+}
+
+log_end_fail_msg()
+{
+	_log_msg "fail.\n"
+}
+
+log_end_succ_msg()
+{
+	_log_msg "succ.\n"
+}
+
+debug_msg()
+{
+	_debug_msg "<debug> $@"
+}
+
+debug_begin_msg()
+{
+	_debug_msg "<debug> Begin: $@ ... "
+}
+
+debug_end_msg()
+{
+	_debug_msg "done.\n"
+}
+
+debug_end_fail_msg()
+{
+	_debug_msg "fail.\n"
+}
+
+debug_end_succ_msg()
+{
+	_debug_msg "succ.\n"
+}
+
+panic()
+{
+	if command -v chvt >/dev/null 2>&1; then
+		chvt 1
+	fi
+
+	if [ -n "$panic" ]; then
+		sleep $panic
+		reboot
+	fi
+
+	modprobe i8042 atkbd >/dev/null 2>&1
+
+	echo "$@"
+	REASON="$@" PS1='{initramfs} ' /bin/sh -i \
+		</dev/console >/dev/console 2>&1
+}
+
+maybe_break()
+{
+	if [ "$break" = "$1" ]; then
+		panic "Spawning shell within the initramfs"
+	fi
+}
+
+run_alphaorder()
+{
+	for file in $(ls "$1/")
+	do
+		debug_msg "Run $1/$file"
+		"$1/$file"; ec=$?
+		if [ "$ec" -ne "0" ]; then
+			echo "Error: Calling $file failed ($?)."
+			exit $ec
+		fi
+	done
+}
+
+run_scripts()
+{
+	initdir=$1
+
+	[ ! -d "$initdir" ] && return
+
+	log_begin_msg "Running /scripts/init-top"
+
+	if [ -f "$initdir/ORDER" ]; then
+		. "$initdir/ORDER"
+	else
+		run_alphaorder "$initdir"
+	fi
+
+	log_end_msg
+}
+
+load_modules()
+{
+	log_begin_msg "Loading essential modules"
+	if [ -e /conf/modules ]; then
+		cat /conf/modules | while read m; do
+			m=$(echo "$m")			# discard WS
+			m=${m%.ko}			# discard suffix
+			[ -n "${m###*}" ] || continue	# comment ?
+			modprobe $m
+		done
+	fi
+	log_end_msg
+}
+
+# get_fstype <device>
+get_fstype()
+{
+	local fstype="$rootfstype"
+	[ -n "$fstype" ] || fstype=$(blkid -o value -s TYPE "$1"); ec=$?
+	echo "$fstype";
+	return $ec
+}
+
+# wait for queued kernel/udev events.
+wait_for_udev()
+{
+	command -v udevadm >/dev/null 2>&1 || return 0
+	udevadm settle ${1:+--timeout=$1}
+}
