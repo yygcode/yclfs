@@ -36,13 +36,11 @@ start_daemon()
 {
 	local force nice=0 pidfile pidlist="" ret="" prog=""
 
-	eval $(yc_getopt -ctrue -vyes -xprog \
+	eval $(yc_getopt -o -ctrue -vyes -xprog \
 		force,f nice,n,: pidfile,p,: -- "$@")
 
-	[ -x "$prog" ] || return 1
-
 	if [ -z "$force" ]; then
-		pidlist=$(pidofproc ${pidfile:+-p $pidfile} "$1")
+		pidlist=$(pidofproc "$@")
 		ret=$?
 		case "$ret" in
 		0)
@@ -76,6 +74,96 @@ start_daemon()
 }
 
 # NAME
+#	stop_daemon - stop system daemon programs
+#
+# SYNOPSIS
+#	stop_daemon [OPTION]... [--] DAEMON
+#
+# DESCRIPTION
+#	OPTIONs:
+#		-p, --pidfile		daemon pid file pathname
+#		-t, --timeout		timeout
+#
+# RETURN VALUE
+#	The same as killproc()
+stop_daemon()
+{
+	killproc "$@" "-TERM" "-KILL"
+}
+
+# NAME
+#	killproc - Send signal to running processes to stop it
+#
+# SYNOPSIS
+#	killproc [OPTION]... [--] PROGRAM [SIGNAL]
+#
+# DESCRIPTION
+#	OPTIONs:
+#		-p, --pidfile		program pid file pathname
+#		-t, --timeout		timeout
+#
+# RETURN VALUE
+#	0 - program is running, print PIDs to stdout
+#	1 - stop failed
+#	2 - program is dead, pidfile exists, or program is not running
+#	3 - arguments error
+killproc()
+{
+	local pidfile pid pidlist ret timeout=3
+
+	eval $(yc_getopt -ctrue -o -xprog pidfile,p,: timeout,t,: "$@")
+
+	pidlist=$(pidofproc "$@")
+	ret=$?
+
+	# shift to prog
+	while [ -n "$1" ] && [ "$1" != "$prog" ]; do shift; done
+
+	case $ret in
+	0)
+	# program running, wait for send SIGNAL
+	:
+	;;
+	1)
+	# program is not running. pidfile exists.
+	rm -f "$pidfile"
+	return 2
+	;;
+	*)
+	return $ret
+	esac
+
+	local signal="-TERM" fallback="-KILL"
+
+	# signal set ?
+	[ -n "${2#SIG}" ] && { signal=${2#SIG}; fallback=""; }
+	[ -n "${3#SIG}" ] && fallback=${3#SIG}
+	[ -n "${signal##-*}" ] && signal="-$signal"
+	[ -n "${fallback##-*}" ] && fallback="-$fallback"
+
+	for pid in $pidlist; do
+		kill -0 $pid || continue
+		kill "$signal" $pid 2>/dev/null
+
+		local repeat=$((timeout * 10))
+		while [ $repeat -ne 0 ]; do
+			kill -0 $pid 2>/dev/null || break
+			sleep 0.1
+			: $((--repeat))
+		done
+
+		if [ $repeat -eq 0 ]; then
+			[ -n "$fallback" ] && kill "$fallback" $pid 2>/dev/null
+			sleep 1
+			kill -0 $pid 2>/dev/null && return 1
+		fi
+	done
+
+	[ -z "$pidfile" ] && pidfile=${prog##*/}.pid
+	[ -e "$pidfile" ] && rm -f $pidfile
+}
+
+# NAME
 #	pidofproc - find the process ID of the program
 #
 # SYNOPSIS
@@ -94,7 +182,7 @@ pidofproc()
 {
 	local pidfile="" prog="" lpids="" es=0
 
-	eval $(yc_getopt pidfile,p,: "$@")
+	eval $(yc_getopt -o -ctrue -xprog pidfile,p,: "$@")
 
 	if [ -z "$pidfile" ]; then
 		local progbase=${prog##*/}
@@ -122,6 +210,72 @@ pidofproc()
 
 	echo $lpids
 	return $es
+}
+
+# NAME
+#	statusproc - status of program
+#
+# SYNOPSIS
+#	statusproc [OPTION]... [--] PROGRAM
+#
+# DESCRIPTION
+#	OPTIONs:
+#		-p, --pidfile		program pid file pathname
+#
+# RETURN VALUE
+#	0 - program is running
+#	1 - program is dead, pidfile exists
+#	2 - program is not running
+#	3 - arguments error
+statusproc()
+{
+	local pidfile pidlist pid prog
+
+	eval $(yc_getopt -o -ctrue -xprog pidfile,p,: "$@")
+
+	pidlist=$(pidofproc "$@")
+
+	local progbase=${prog##*/}
+	[ -z "$pidfile" ] && pidfile=$progbase.pid
+	if [ -n "$pidlist" ]; then
+		echo -e "${WARNING}$progbase is running with process" \
+			"ID(s) $pidlist.${NORMAL}"
+		return 0
+	else
+		if [ -n "$progbase" ] && [ -e "$pidfile" ]; then
+			echo -e "${WARNING} $progbase is not running but " \
+				"$pidfile exists.${NORMAL}"
+		else
+			echo -e "${INFO} $progbase is not running.${NORMAL}"
+		fi
+		return 1
+	fi
+}
+
+# log
+timespec()
+{
+	STAMP="$(echo `date +"%b %d %T"` `hostname`) "
+}
+
+log_success_msg()
+{
+	echo -n -e "$@"
+	echo -e "${SET_COL}${BRACKET}[${SUCCESS}  OK  ${BRACKET}]${NORMAL}"
+
+	timespec
+	echo -e "${STAMP} ${@} OK" >> ${BOOTLOG}
+	return 0
+}
+
+log_success_msg2()
+{
+	:
+}
+
+log_begin_msg()
+{
+	:
 }
 
 # screen dimensions

@@ -72,7 +72,7 @@ _cf4b01321e05aab585026a219ec1f969=cf4b01321e05aab585026a219ec1f969
 yc_getopt()
 {
 	local _gp_prefix _gp_suffix _gp_callback _gp_value _gp_exec
-	local _gp_continue=no  _gp_quiet=no
+	local _gp_continue=no _gp_quiet=no
 
 	# 1. parse options for yc_getopt
 	eval $(_yc_getopt "_gp" "" "" "yes" "yes" "" ""\
@@ -101,7 +101,7 @@ _yc_getopt()
 	[ -n "$_callback" ] || _callback=_yc_getopt_callback
 
 	# 1. parse, save all optstrings
-	local lopt sopt vopt invalid opt
+	local lopt sopt vopt invalid opt _exec_try=""
 	local lopt_array sopt_array val_array idx_array=0
 	while [ $# -gt 0 ]; do
 		opt=$1; shift
@@ -123,20 +123,29 @@ _yc_getopt()
 		fi
 
 		# check
+		local valid_format="yes"
 		if [ -n "$lopt" ] && [ -z "${lopt##*[!a-zA-Z0-9-_]*}" ]; then
 			$_callback err "optstring '$opt' long-option error"
-			continue
+			valid_format=no
 		fi
 		if [ ${#sopt} -gt 1 ] && [ "$_continue" = "no" ] ; then
 			$_callback err "optstring '$opt' short-option error"
-			continue
+			valid_format=no
 		fi
 		if [ -n "$vopt" ] && [ "$vopt" != ":" -a "$vopt" != "::" ];
 		then
 			$_callback err "optstring '$opt' value-option error"
-			continue
+			valid_format=no
 		fi
 
+		if [ "$valid_format" = "no" ]; then
+			if [ -n "$_gp_exec" ]; then
+				_exec_try="$_prefix$_gp_exec$_suffix='$opt'"
+			fi
+			continue
+		elif [ -n "${opt##*[!a-zA-Z0-9]*}" ]; then
+			_exec_try="$_prefix$_gp_exec$_suffix='$opt'"
+		fi
 		lopt_array[$idx_array]=$lopt
 		sopt_array[$idx_array]=$sopt
 		vopt_array[$idx_array]=$vopt
@@ -165,6 +174,8 @@ _yc_getopt()
 		esac
 		shift $shift_cnt
 	done
+
+	[ -n "$_gp_exec" ] && echo "$_exec_try"
 }
 
 # _yc_getopt_callback warn|err ...
