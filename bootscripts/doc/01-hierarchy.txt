@@ -1,0 +1,14 @@
+* /:
+bin
+boot
+dev
+etc
+lib/lib64
+media
+mnt
+opt
+sbin
+srv
+tmp
+usr
+var

@@ -1,0 +1,11 @@
+# * -- /etc/profile - system-wide startup file of bash -- *
+
+export LANG=en_US.UTF8
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/nonexist"
+
+# PS1,  default is `\s-\v\$ '
+PS1='\e[1;34m\u\e[0;31m@\e[1;35m\h\e[0;39m:\w\$ '
+
+if [ -f /etc/bash.bashrc ]; then
+	. /etc/bash.bashrc
+fi

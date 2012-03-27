@@ -106,12 +106,12 @@ stop_daemon()
 #	0 - program is running, print PIDs to stdout
 #	1 - stop failed
 #	2 - program is dead, pidfile exists, or program is not running
-#	3 - arguments error
+#	other - like as pidofproc()
 killproc()
 {
 	local pidfile pid pidlist ret timeout=3
 
-	eval $(yc_getopt -ctrue -o -xprog pidfile,p,: timeout,t,: "$@")
+	eval $(yc_getopt -ctrue -o -xprog pidfile,p,: timeout,t,: -- "$@")
 
 	pidlist=$(pidofproc "$@")
 	ret=$?
@@ -164,6 +164,46 @@ killproc()
 }
 
 # NAME
+#	statusofproc - status of program
+#
+# SYNOPSIS
+#	statusofproc [OPTION]... [--] PROGRAM
+#
+# DESCRIPTION
+#	OPTIONs:
+#		-p, --pidfile		program pid file pathname
+#
+# RETURN VALUE
+#	0 - program is running
+#	1 - program is dead, pidfile exists
+#	2 - program is not running
+#	3 - arguments error
+statusofproc()
+{
+	local pidfile pidlist pid prog
+
+	eval $(yc_getopt -o -ctrue -xprog pidfile,p,: -- "$@")
+
+	pidlist=$(pidofproc "$@")
+
+	local progbase=${prog##*/}
+	[ -z "$pidfile" ] && pidfile=$progbase.pid
+	if [ -n "$pidlist" ]; then
+		echo -e "${WARNING}$progbase is running with process" \
+			"ID(s) $pidlist.${NORMAL}"
+		return 0
+	else
+		if [ -n "$progbase" ] && [ -e "$pidfile" ]; then
+			echo -e "${WARNING} $progbase is not running but " \
+				"$pidfile exists.${NORMAL}"
+		else
+			echo -e "${INFO} $progbase is not running.${NORMAL}"
+		fi
+		return 1
+	fi
+}
+
+# NAME
 #	pidofproc - find the process ID of the program
 #
 # SYNOPSIS
@@ -182,7 +222,7 @@ pidofproc()
 {
 	local pidfile="" prog="" lpids="" es=0
 
-	eval $(yc_getopt -o -ctrue -xprog pidfile,p,: "$@")
+	eval $(yc_getopt -o -ctrue -xprog pidfile,p,: -- "$@")
 
 	if [ -z "$pidfile" ]; then
 		local progbase=${prog##*/}
@@ -212,98 +252,68 @@ pidofproc()
 	return $es
 }
 
-# NAME
-#	statusproc - status of program
-#
-# SYNOPSIS
-#	statusproc [OPTION]... [--] PROGRAM
-#
-# DESCRIPTION
-#	OPTIONs:
-#		-p, --pidfile		program pid file pathname
-#
-# RETURN VALUE
-#	0 - program is running
-#	1 - program is dead, pidfile exists
-#	2 - program is not running
-#	3 - arguments error
-statusproc()
+log_daemon_msg()
 {
-	local pidfile pidlist pid prog
-
-	eval $(yc_getopt -o -ctrue -xprog pidfile,p,: "$@")
-
-	pidlist=$(pidofproc "$@")
-
-	local progbase=${prog##*/}
-	[ -z "$pidfile" ] && pidfile=$progbase.pid
-	if [ -n "$pidlist" ]; then
-		echo -e "${WARNING}$progbase is running with process" \
-			"ID(s) $pidlist.${NORMAL}"
-		return 0
-	else
-		if [ -n "$progbase" ] && [ -e "$pidfile" ]; then
-			echo -e "${WARNING} $progbase is not running but " \
-				"$pidfile exists.${NORMAL}"
-		else
-			echo -e "${INFO} $progbase is not running.${NORMAL}"
-		fi
-		return 1
-	fi
-}
-
-# log
-timespec()
-{
-	STAMP="$(echo `date +"%b %d %T"` `hostname`) "
+	log_begin_msg "$1${2:+: ${INFO}$2${NORMAL}}"
 }
 
 log_success_msg()
 {
-	echo -n -e "$@"
-	echo -e "${SET_COL}${BRACKET}[${SUCCESS}  OK  ${BRACKET}]${NORMAL}"
-
-	timespec
-	echo -e "${STAMP} ${@} OK" >> ${BOOTLOG}
-	return 0
+	log_end_msg 0 "$@"
 }
 
-log_success_msg2()
+log_warning_msg()
 {
-	:
+	log_end_msg 255 "$@"
+}
+
+log_failure_msg()
+{
+	log_end_msg 1 "$@"
 }
 
 log_begin_msg()
 {
-	:
+	echo -n -e "$@"
 }
 
-# screen dimensions
-stty_columns()
+# log_end_msg OK|WARN|FAIL|0|255|* [...]
+log_end_msg()
 {
-	local col=$(stty size 2>/dev/null)
-	col=${col##* }
-	if [ -z "$col" ] || [ "$col" = "0" ]; then
-		col=80
-	fi
+	local status="${1:-OK}"
+	local color=""
 
-	echo $col
+	[ "$1" = "$status" ] && shift
+
+	case "$status" in
+	"0"|"OK"|"SUCC"|"ok"|"succ")
+		color="$SUCCESS"
+		status=SUCC
+		;;
+	"255"|"WARN"|"warn")
+		color="$WARNING"
+		status=WARN
+		;;
+	*)
+		color="$FAILURE"
+		status=FAIL
+		;;
+	esac
+
+	echo -e "$@${SET_COL}${BRACKET}[${color} $status ${BRACKET}]${NORMAL}"
 }
 
-[ -n "$COLUMNS" ] || COLUMNS=$(stty_columns)
+COLUMNS=$(tput cols)
+[ -n "$COLUMNS" ] || COLUMNS=80
 COL=$((COLUMNS - 8))
-WCOL=$((COL - 2))
 # Set cursor position
-SET_COL="\\033[${COL}G"
-SET_WCOL="\\033[${WCOL}G"
-CURS_UP="\\033[1A\\033[0G"
+SET_COL="\e[${COL}G"
 
 # color
-NORMAL="\\033[0;39m"
-SUCCESS="\\033[1;32m"
-WARNING="\\033[1;33m"
-FAILURE="\\033[1;31m"
-INFO="\\033[1;36m"
-BRACKET="\\033[1;34m"
-BOOTLOG=/var/log/boot
-KILLDELAY=2
+# reference 'man tput'
+BRACKET='\e[1;34m'
+NORMAL='\e[0;39m'
+FAILURE='\e[1;31m'
+SUCCESS='\e[1;32m'
+WARNING='\e[1;35m'
+INFO='\e[1;36m'

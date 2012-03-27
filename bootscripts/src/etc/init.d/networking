@@ -1,0 +1,63 @@
+#!/bin/sh
+
+PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+. /lib/services/init-functions
+
+usage()
+{
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+}
+
+[ $# -eq 1 ] || usage
+
+check_network_fs()
+{
+	[ -e /proc/mounts ] || return 0
+
+	exec 3< /proc/mounts
+
+	while read -u3 DEV MTPT FSTYPE REST; do
+		case "$DEV" in
+		/dev/nbd*|/dev/nd[a-z]*|/dev/etherd/e*)
+			log_warning_msg
+		esac
+	done
+}
+
+check_network_swaps()
+{
+}
+
+do_start()
+{
+	log_begin_msg "Configuring network interfaces"
+	ifup -a
+	log_end_msg $?
+}
+
+do_stop()
+{
+	log_begin_msg "Deconfiguring network interfaces"
+	ifdown -a --exclude=lo
+	log_end_msg $?
+}
+
+case "$1" in
+start)
+	do_start
+	;;
+stop)
+	do_stop
+	;;
+restart)
+	do_stop
+	do_start
+	;;
+*)
+	usage
+	;;
+esac
+
+exit 0

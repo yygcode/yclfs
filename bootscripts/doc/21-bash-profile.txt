@@ -1,0 +1,6 @@
+* An interactive login shell or non-interactive shell with --login option.
+	* /etc/profile.
+	* ~/.bash_profile || ~/.bash_login || ~/.profile
+  When a login shell exits, ~/.bash_logout will be execute.
+
+
