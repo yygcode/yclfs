@@ -1,4 +1,4 @@
-#!/bin/sh
+#! /bin/bash
 
 PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
@@ -6,54 +6,36 @@ PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 usage()
 {
-	echo "Usage: $0 {start|stop|restart}"
+	echo "Usage: $0 {start|stop|restart} [ifupdown-options]"
 	exit 1
 }
 
-[ $# -eq 1 ] || usage
-
-check_network_fs()
-{
-	[ -e /proc/mounts ] || return 0
-
-	exec 3< /proc/mounts
-
-	while read -u3 DEV MTPT FSTYPE REST; do
-		case "$DEV" in
-		/dev/nbd*|/dev/nd[a-z]*|/dev/etherd/e*)
-			log_warning_msg
-		esac
-	done
-}
-
-check_network_swaps()
-{
-}
+[ $# -eq 0 ] && usage
 
 do_start()
 {
 	log_begin_msg "Configuring network interfaces"
-	ifup -a
+	ifup -a "$@"
 	log_end_msg $?
 }
 
 do_stop()
 {
 	log_begin_msg "Deconfiguring network interfaces"
-	ifdown -a --exclude=lo
+	ifdown -a --exclude=lo "$@"
 	log_end_msg $?
 }
 
 case "$1" in
 start)
-	do_start
+	do_start "${@:2}"
 	;;
 stop)
-	do_stop
+	do_stop "${@:2}"
 	;;
 restart)
-	do_stop
-	do_start
+	do_stop "${@:2}"
+	do_start "${@:2}"
 	;;
 *)
 	usage

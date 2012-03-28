@@ -25,7 +25,7 @@ do_start()
 do_stop()
 {
 	log_daemon_msg "Stopping Secure Shell Server" "sshd"
-	stop_daemon --pidfile "$PIDFILE" "$SSHD"
+	stop_daemon --pidfile "$PIDFILE" "$SSHD" "$@"
 	log_end_msg $?
 }
 
@@ -39,11 +39,11 @@ start)
 	do_start "${@:2}"
 	;;
 stop)
-	do_stop
+	do_stop "${@:2}"
 	;;
 restart)
-	do_stop
-	do_start
+	do_stop "${@:2}"
+	do_start "${@:2}"
 	;;
 status)
 	print_status
