@@ -14,7 +14,9 @@ shopt -s histappend
 shopt -s checkwinsize
 
 # PS1
-PS1='\e[1;34m\u\e[0;31m@\e[1;35m\h\e[0;39m:\e[0;32m\w\$ \e[0;39m'
+#PS1=\
+# '\[\e[1;34m\]\u\[\e[0;31m\]@\[\e[1;35m\]\h\
+# \[\e[0;39m\]:\[\e[0;32m\]\w\$ \[\e[0;39m\]'
 
 # dircolors -- color setup for ls
 eval "$(dircolors -b)"
