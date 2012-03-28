@@ -264,7 +264,7 @@ pidofproc()
 
 log_daemon_msg()
 {
-	log_begin_msg "$1${2:+: ${INFO}$2${NORMAL}}"
+	log_begin_msg "$1${2+: ${INFO}${@:2}${NORMAL}}"
 }
 
 log_success_msg()

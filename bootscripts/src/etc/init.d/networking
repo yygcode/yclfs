@@ -14,14 +14,15 @@ usage()
 
 do_start()
 {
-	log_begin_msg "Configuring network interfaces"
+	log_daemon_msg "Configuring network interfaces" "ifup -a $@"
 	ifup -a "$@"
 	log_end_msg $?
 }
 
 do_stop()
 {
-	log_begin_msg "Deconfiguring network interfaces"
+	log_daemon_msg "Deconfiguring network interfaces" \
+		"ifdown -a --exclude=lo $@"
 	ifdown -a --exclude=lo "$@"
 	log_end_msg $?
 }
