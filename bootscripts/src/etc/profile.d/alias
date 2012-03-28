@@ -1,8 +1,0 @@
-export LS_OPTIONS='--color=auto'
-alias cp='cp -i'
-alias ls='ls $LS_OPTIONS'
-alias l='ls $LS_OPTIONS -CF'
-alias la='ls $LS_OPTIONS -A'
-alias ll='ls $LS_OPTIONS -l'
-alias mv='mv -i'
-alias rm='rm -i'

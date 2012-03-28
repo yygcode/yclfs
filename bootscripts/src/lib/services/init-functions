@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 # * -- shell functions -- *
 #
 # Description	: run-level control functions
@@ -66,9 +66,15 @@ start_daemon()
 	while [ -n "$1" ] && [ "$1" != "$prog" ]; do shift; done
 
 	# get pid
-	pid=$(echo $BASHPID; exec nice -n "$nice" "$@")
+	nice -n "$nice" "$@"
 	ret=$?
-	[ -n "$pidfile" ] && echo $pid > $pidfile
+
+	# some daemons can't report exit status properly, so ...
+	if [ $ret -eq 0 ]; then
+		pid=$(pidofproc ${pidfile:+-p $pidfile} $prog)
+		ret=$?
+		[ $ret -eq 0 ] && [ -n "$pidfile" ] && echo $pid > $pidfile
+	fi
 
 	return $ret
 }
@@ -147,8 +153,8 @@ killproc()
 
 		local repeat=$((timeout * 10))
 		while [ $repeat -ne 0 ]; do
-			kill -0 $pid 2>/dev/null || break
 			sleep 0.1
+			kill -0 $pid 2>/dev/null || break
 			: $((--repeat))
 		done
 
@@ -160,7 +166,9 @@ killproc()
 	done
 
 	[ -z "$pidfile" ] && pidfile=${prog##*/}.pid
-	[ -e "$pidfile" ] && rm -f $pidfile
+	[ -e "$pidfile" ] && rm -f "$pidfile"
+
+	return 0
 }
 
 # NAME
@@ -188,16 +196,17 @@ statusofproc()
 
 	local progbase=${prog##*/}
 	[ -z "$pidfile" ] && pidfile=$progbase.pid
+	echo -e -n " ${INFO}$progbase${NORMAL} "
 	if [ -n "$pidlist" ]; then
-		echo -e "${WARNING}$progbase is running with process" \
-			"ID(s) $pidlist.${NORMAL}"
+		echo -e "is running with process" \
+			"ID(s) ${INFO}$pidlist.${NORMAL}"
 		return 0
 	else
 		if [ -n "$progbase" ] && [ -e "$pidfile" ]; then
-			echo -e "${WARNING} $progbase is not running but " \
-				"$pidfile exists.${NORMAL}"
+			echo -e "is not running but"\
+				"'${INFO}$pidfile${NORMAL}' exists."
 		else
-			echo -e "${INFO} $progbase is not running.${NORMAL}"
+			echo -e "is not running."
 		fi
 		return 1
 	fi
@@ -229,7 +238,8 @@ pidofproc()
 		[ -e "$progbase.pid" ] && pidfile=$progbase.pid
 	fi
 
-	if [ -n "$pidfile" ] && [ -e "$pidfile" ]; then
+	if [ -n "$pidfile" ]; then
+		[ -e "$pidfile" ] || return 2
 		pidlist=$(head -n1 "$pidfile")
 	else
 		pidlist=$(pidof "$prog")

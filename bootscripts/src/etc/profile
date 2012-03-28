@@ -1,17 +1,7 @@
-# * -- /etc/profile - system-wide startup file of bash -- *
+# /etc/profile - system-wide startup file of bash(1).
 
-echo "exec: /etc/profile"
 export LANG=en_US.UTF8
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-
-# PS1, default is `\s-\v\$ '
-# PS1='\e[1;34m\u\e[0;31m@\e[1;35m\h\e[0;39m:\w\$ '
-PS1='\e[1;34m\u\e[0;31m@\e[1;35m\h\e[0;39m:\e[0;32m\w\$ \e[0;39m'
-
-eval $(dircolors 2>/dev/null)
-if [ -f /etc/bash.bashrc ]; then
-	. /etc/bash.bashrc
-fi
 
 if [ -d /etc/profile.d ]; then
 	for i in /etc/profile.d/*; do
@@ -21,3 +11,6 @@ if [ -d /etc/profile.d ]; then
 	done
 	unset i
 fi
+
+# goto home directory
+cd
